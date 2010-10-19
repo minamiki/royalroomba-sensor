@@ -9,7 +9,6 @@ import java.util.TimerTask;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -31,18 +30,16 @@ public class SensorMain extends Activity implements SensorEventListener {
 	String host = "www.vorce.net";
 	
 	// Proximity
-	public FlashDevice device;
 	int i, count = 0;
 	private int sensorstate = 0;
 	MediaPlayer[] hit = new MediaPlayer[7];
 	MediaPlayer raygun;
-	Intent ledIntent;
-	// Represents a 'su' instance
-	public Su su_command;
-	public boolean has_root;
+	// led
+	Su su_command;
 	private Context context;
 	TimerTask turnOffLED;
 	Timer waitTimer;
+	boolean hasRoot = false;
 	boolean ledOn = false;
 	
 	// Accelerometer
@@ -100,9 +97,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 		// prepare the random number generator
 		generator = new Random();
 		
-		has_root = false;
-		device = FlashDevice.getInstance();
-		
 		// Obtain a reference to the system-wide sensor event manager. 
 		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 		proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
@@ -117,34 +111,19 @@ public class SensorMain extends Activity implements SensorEventListener {
 		accelMag = (TextView) findViewById(R.id.magnitude);
 		accelMaxMag = (TextView) findViewById(R.id.maxMagnitude);
 		 
-		// Init the audio files
-		prepareAudio();
+		// Initialise the audio files
+		initAudio();
+		
 		// connect to the server
-		mqConn = ServerMQ.getInstance();
-		connectSever();
+		//mqConn = ServerMQ.getInstance();
+		//connectSever();
 
-
-		if (new File("/dev/msm_camera/config0").exists() == false) {
-			Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
-			has_root = false;
-		}
-
-		if(!device.Writable()){
-			Log.d("Torch", "Cant open flash RW");
-			su_command = new Su();
-			has_root = this.su_command.can_su;
-			if(!has_root){
-				Toast.makeText(this, "No Root!", Toast.LENGTH_SHORT).show();
-			}else{
-				su_command.Run("chmod 666 /dev/msm_camera/config0");
-			}
-		}
-
-		// led
-		ledIntent = new Intent(SensorMain.this, RootTorchService.class);
+		// Initialise the led
+		checkDevice();	
 	}
-
-	public void prepareAudio() {
+	
+	// Initialise the audio files
+	public void initAudio() {
 		try {
 			hit[0] = MediaPlayer.create(SensorMain.this, R.raw.ouch1);
 			hit[1] = MediaPlayer.create(SensorMain.this, R.raw.ouch2);
@@ -224,11 +203,11 @@ public class SensorMain extends Activity implements SensorEventListener {
 			// post update
 	        Thread updateThread = new Thread() {
 	            public void run() {
-	            	updateServer();
+	            	//updateServer();
 	                mHandler.post(mUpdateResults);
 	            }
 	        };
-	        updateThread.start();
+	        //updateThread.start();
 
 			sensorstate = 0;
 			
@@ -242,11 +221,27 @@ public class SensorMain extends Activity implements SensorEventListener {
 		}
 	}
 	
+	// check led
+	public void checkDevice(){
+		if (new File("/sys/devices/platform/flashlight.0/leds/flashlight/brightness").exists() == false) {
+			Toast.makeText(context, "Sorry, manual LED control not supported!", Toast.LENGTH_SHORT).show();
+		}else{
+			// device is okie, now ask for root
+			su_command = new Su();
+			hasRoot = this.su_command.can_su;
+			if(!hasRoot){
+				Toast.makeText(context, "No root! Unable to control LEDs!", Toast.LENGTH_SHORT).show();
+			}
+		}
+	}
+	
 	// Turns of the LED if it's on
 	public class turnOffLED extends TimerTask {
 		public void run() {
 			if(ledOn){
-				stopService(ledIntent);		
+				if(hasRoot){
+					su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
+				}	
 				ledOn = false;
 			}
 		}
@@ -256,11 +251,15 @@ public class SensorMain extends Activity implements SensorEventListener {
 	public void toggleLED(){
 		if(ledOn){
 			Log.i("RR-Sensor", "LED is ON, turn it off");
-			stopService(ledIntent);
+			if(hasRoot){
+				su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
+			}
 			ledOn = false;
 		}else{
 			Log.i("RR-Sensor", "LED is OFF, turn it on");
-			startService(ledIntent);
+			if(hasRoot){
+				su_command.Run("echo 1 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
+			}
 			ledOn = true;
 			new Timer().schedule(new turnOffLED(), 1000);			
 		}
@@ -320,6 +319,9 @@ public class SensorMain extends Activity implements SensorEventListener {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		if(hasRoot){
+			su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
+		}
 		sensorManager.unregisterListener(SensorMain.this, proximitySensor);
 		sensorManager.unregisterListener(SensorMain.this, accelerometerSensor);
 	}
@@ -329,5 +331,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 		super.onResume();
 		sensorManager.registerListener(SensorMain.this, proximitySensor, SensorManager.SENSOR_DELAY_GAME);
 		sensorManager.registerListener(SensorMain.this, accelerometerSensor, SensorManager.SENSOR_DELAY_GAME);
+		
 	}
 }

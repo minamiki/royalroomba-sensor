@@ -11,10 +11,6 @@
             </intent-filter>
         </activity>
 	   <service android:enabled="true" android:name=".TorchService" />
-	   <service android:enabled="true" android:name=".RootTorchService" />
     </application>
-
-
-<uses-permission android:name="android.permission.INTERNET"></uses-permission>
-
+<uses-permission android:name="android.permission.INTERNET" />
 </manifest>
