@@ -1,24 +1,11 @@
 package com.royalroomba.sensor;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 
 import android.app.Activity;
 import android.content.Context;
@@ -38,6 +25,10 @@ public class SensorMain extends Activity implements SensorEventListener {
 
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
+	
+	// RabbitMQ Connection
+	ServerMQ mqConn;
+	String host = "www.vorce.net";
 	
 	// Proximity
 	public FlashDevice device;
@@ -71,11 +62,16 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// Hit sounds
 	Random generator;
 	
-	// Send server
+	/* Send server
 	DefaultHttpClient hc;
 	ResponseHandler <String> res;
 	HttpPost postMethod;
 	List<NameValuePair> nameValuePairs;
+	*/
+	
+	// update states
+	private static final int UPDATE = 1;
+	private static final int CONNECT = 2;
 	
 	// Interface elements
 	TextView proxCount, proxState, accelX, accelY, accelZ, accelMag, accelMaxMag;
@@ -87,7 +83,12 @@ public class SensorMain extends Activity implements SensorEventListener {
     // Create runnable for posting
     final Runnable mUpdateResults = new Runnable() {
         public void run() {
-        	updateNotify();
+        	updateNotify(UPDATE);
+        }
+    };
+    final Runnable mServerConnected = new Runnable() {
+        public void run() {
+        	updateNotify(CONNECT);
         }
     };
 
@@ -118,6 +119,10 @@ public class SensorMain extends Activity implements SensorEventListener {
 		 
 		// Init the audio files
 		prepareAudio();
+		// connect to the server
+		mqConn = ServerMQ.getInstance();
+		connectSever();
+
 
 		if (new File("/dev/msm_camera/config0").exists() == false) {
 			Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
@@ -160,7 +165,22 @@ public class SensorMain extends Activity implements SensorEventListener {
 
 	}
 	
+	public void connectSever(){
+        /*
+		Thread connectThread = new Thread() {
+            public void run() {
+            	mqConn.connect(host);
+                mHandler.post(mServerConnected);
+            }
+        };
+        connectThread.start();
+        */
+		mqConn.connect(host);
+	}
+	
 	public void updateServer(){
+		mqConn.publish("proxhit", "hit");
+		/* Update the MySQL server via http
 		hc = new DefaultHttpClient();
 		res = new BasicResponseHandler();
 		postMethod = new HttpPost("http://hci-apps.ddns.comp.nus.edu.sg/yitchun/hitcount.php");
@@ -170,21 +190,32 @@ public class SensorMain extends Activity implements SensorEventListener {
 			postMethod.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 			hc.execute(postMethod,res);
 		}catch(UnsupportedEncodingException e){
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}catch(ClientProtocolException e){
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}catch(IOException e){
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		*/
 	}
 	
-	public void updateNotify(){
-		Toast.makeText(this, "Server Updated", Toast.LENGTH_SHORT).show();
+	public void updateNotify(int state){
+		String message;
+		switch(state){
+		case 1:
+			message = "Server Updated";
+			break;
+		case 2:
+			message = "Connection established";
+			break;
+		default:
+			message = "Error";
+			break;				
+		}
+		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
 	}
 
+	// keep track of the sensor state to register hits only on entry
 	public void manageSensorState(float distance){
 		// check state to count only on entry
 		if(sensorstate == 0){
@@ -194,7 +225,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	        Thread updateThread = new Thread() {
 	            public void run() {
 	            	updateServer();
-	                //mHandler.post(mUpdateResults);
+	                mHandler.post(mUpdateResults);
 	            }
 	        };
 	        updateThread.start();
@@ -211,6 +242,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		}
 	}
 	
+	// Turns of the LED if it's on
 	public class turnOffLED extends TimerTask {
 		public void run() {
 			if(ledOn){
@@ -220,7 +252,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		}
 	}
 
-	
+	// Toggles the LED on or off
 	public void toggleLED(){
 		if(ledOn){
 			Log.i("RR-Sensor", "LED is ON, turn it off");
@@ -275,7 +307,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 						Toast.makeText(this, "A hit is detected at with magnitude of " + format.format(magnitude) + " with an interval of " + format.format(timeDiff/1000000000.0) + " secs", Toast.LENGTH_SHORT).show();
 					}
 				}
-				
 				
 	    		break;
 	 		case Sensor.TYPE_PROXIMITY:
