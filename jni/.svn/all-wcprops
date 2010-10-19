@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 26
+/svn/!svn/ver/14/trunk/jni
+END
+Android.mk
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/5/trunk/jni/Android.mk
+END
+flash.c
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/14/trunk/jni/flash.c
+END
+flash.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/5/trunk/jni/flash.cpp
+END

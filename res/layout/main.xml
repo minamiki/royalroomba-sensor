@@ -1,15 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    >
+    android:stretchColumns="1">
 
-  
+    <TableRow>
+        <TextView
+            android:padding="5dip" android:text="Proximity" android:textSize="30px"/>
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="Counts" android:width="100px"/>
+        
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:id="@+id/count"></TextView>
+</TableRow>
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="State" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="Idle" android:id="@+id/proxState"/>
+    </TableRow>
+    
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
+
+    <TableRow>
+        <TextView
+            android:padding="5dip" android:text="Accelerometer" android:textSize="30px"/>
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="x-axis" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="0" android:id="@+id/accelX"/>
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="y-axis" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="0" android:id="@+id/accelY"/>
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="z-axis" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="0" android:id="@+id/accelZ"/>
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="Magnitude" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="0" android:id="@+id/magnitude"/>
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:padding="3dip" android:text="Peak Magnitude" android:width="100px"/>
+        <TextView
+            android:layout_column="1"
+            android:padding="3dip" android:text="0" android:id="@+id/maxMagnitude"/>
+    </TableRow>
 
 
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
 
-<Button android:layout_height="wrap_content" android:layout_width="fill_parent" android:text="Start Service" android:id="@+id/startBtn"></Button>
-<Button android:layout_height="wrap_content" android:layout_width="fill_parent" android:text="Stop Service" android:id="@+id/stopBtn"></Button>
-</LinearLayout>
-
+</TableLayout>
