@@ -34,24 +34,10 @@
 
     <TableRow>
         <TextView
-            android:padding="3dip" android:text="x-axis" android:width="100px"/>
+            android:padding="3dip" android:text="Current Sensitivity" android:width="100px"/>
         <TextView
             android:layout_column="1"
-            android:padding="3dip" android:text="0" android:id="@+id/accelX"/>
-    </TableRow>
-    <TableRow>
-        <TextView
-            android:padding="3dip" android:text="y-axis" android:width="100px"/>
-        <TextView
-            android:layout_column="1"
-            android:padding="3dip" android:text="0" android:id="@+id/accelY"/>
-    </TableRow>
-    <TableRow>
-        <TextView
-            android:padding="3dip" android:text="z-axis" android:width="100px"/>
-        <TextView
-            android:layout_column="1"
-            android:padding="3dip" android:text="0" android:id="@+id/accelZ"/>
+            android:padding="3dip" android:text="0" android:id="@+id/sensitivity"/>
     </TableRow>
     <TableRow>
         <TextView
@@ -73,4 +59,6 @@
         android:layout_height="2dip"
         android:background="#FF909090" />
 
+<Button android:id="@+id/increase" android:layout_width="wrap_content" android:text="Increase Sensitivity" android:layout_marginTop="20px" android:layout_height="wrap_content"></Button>
+<Button android:id="@+id/decrease" android:layout_width="wrap_content" android:text="Decrease Sensitivity" android:layout_height="wrap_content"></Button>
 </TableLayout>

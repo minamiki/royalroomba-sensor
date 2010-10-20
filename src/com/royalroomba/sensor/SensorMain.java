@@ -12,6 +12,8 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,7 +25,8 @@ public class SensorMain extends Activity implements SensorEventListener {
 	
 	// RabbitMQ Connection
 	ServerMQ mqConn;
-	String host = "www.vorce.net";
+	//String host = "www.vorce.net";
+	String host = "192.168.2.100";
 	
 	// Proximity
 	int i, count = 0;
@@ -36,8 +39,8 @@ public class SensorMain extends Activity implements SensorEventListener {
 	AudioControl audio;
 	
 	// Accelerometer
-	private static double threshold = 11.500;
-	private static int interval = 10000;
+	private double threshold = 11.500;
+	private int interval = 10000;
 	private long now = 0;
 	private long timeDiff = 0;
 	private long lastUpdate = 0;
@@ -54,8 +57,13 @@ public class SensorMain extends Activity implements SensorEventListener {
 	private static final int UPDATE = 1;
 	private static final int CONNECT = 2;
 	
+	// update type
+	private static final int PROXIMITY = 1;
+	private static final int CONTACT = 2;
+	
 	// Interface elements
-	TextView proxCount, proxState, accelX, accelY, accelZ, accelMag, accelMaxMag;
+	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag;
+	Button increase, decrease;
 	private NumberFormat format = new DecimalFormat("0.00"); 
 
     // Need handler for callback to the UI thread
@@ -86,11 +94,25 @@ public class SensorMain extends Activity implements SensorEventListener {
 		// Interface elements
 		proxCount = (TextView) findViewById(R.id.count);
 		proxState = (TextView) findViewById(R.id.proxState);
-		accelX = (TextView) findViewById(R.id.accelX);
-		accelY = (TextView) findViewById(R.id.accelY);
-		accelZ = (TextView) findViewById(R.id.accelZ);
+		sensitivity = (TextView) findViewById(R.id.sensitivity);
 		accelMag = (TextView) findViewById(R.id.magnitude);
 		accelMaxMag = (TextView) findViewById(R.id.maxMagnitude);
+		sensitivity.setText(String.valueOf(threshold));
+		
+		increase = (Button) findViewById(R.id.increase);
+		increase.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	threshold -= 0.5;
+            	sensitivity.setText(String.valueOf(threshold));
+            }
+        });
+		decrease = (Button) findViewById(R.id.decrease);
+		decrease.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	threshold += 0.5;
+            	sensitivity.setText(String.valueOf(threshold));
+            }
+        });
 		 
 		// Initialise the audio files
 		audio = new AudioControl(this);
@@ -99,8 +121,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		led = new LedControl(this);
 		
 		// connect to the server
-		//mqConn = ServerMQ.getInstance();
-		//connectSever();
+		connectSever();
 	}
 	
 	@Override
@@ -109,16 +130,16 @@ public class SensorMain extends Activity implements SensorEventListener {
 	}
 	
 	public void connectSever(){
-        /*
+		mqConn = new ServerMQ(host);
+		/*
 		Thread connectThread = new Thread() {
             public void run() {
-            	mqConn.connect(host);
+            	
                 mHandler.post(mServerConnected);
             }
         };
         connectThread.start();
         */
-		mqConn.connect(host);
 	}
 	
 	public void updateServer(){
@@ -173,10 +194,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 	 	synchronized (this) {
 	 		switch(event.sensor.getType()){
 	 		case Sensor.TYPE_ACCELEROMETER:
-	 			// update the interface
-	 			accelX.setText(String.valueOf(event.values[0]));
-	 			accelY.setText(String.valueOf(event.values[1]));
-	 			accelZ.setText(String.valueOf(event.values[2]));
 	 			
 	 			// check for collision
 				now = event.timestamp;

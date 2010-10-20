@@ -11,7 +11,6 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 
 public class ServerMQ{
-	private static ServerMQ currentInstance;
 	
 	//Declare constant variables for RabbitMQ server
 	//public static final String HOST = "169.254.208.130";
@@ -19,7 +18,8 @@ public class ServerMQ{
 	public static final String ROUTING_KEY = "sensor-in-1";
 	public static final String SERVER_KEY = "server";
 	public static final int PORT = AMQP.PROTOCOL.PORT;
-	public static final ConnectionFactory FACTORY = new ConnectionFactory();
+	//public static final ConnectionFactory FACTORY = new ConnectionFactory();
+	public ConnectionFactory factory;
 	public static final String PUBLISH_KEY = "sensor-out-1";
 	public static Connection conn;
 	public static Channel channel;
@@ -31,18 +31,14 @@ public class ServerMQ{
 	//set to constants in case we want to implement easy reconnection
 	//for DCs	
 	
-	static synchronized ServerMQ getInstance(){
-		if (currentInstance == null) {
-			currentInstance = new ServerMQ();
-		}
-		return currentInstance;
-	}
-	public void connect(String host){
+	public ServerMQ(String host){
 		
 		try {
+			factory = new ConnectionFactory();
 			//Set up RabbitMQ Connection
 			Log.i("royalroomba-sensor", "Connecting to Server...");
-			conn = FACTORY.newConnection(host);
+			factory.setHost(host);
+			conn = factory.newConnection();
 			Log.i("royalroomba-sensor", "Connection successful");
 			channel = conn.createChannel();
 			
