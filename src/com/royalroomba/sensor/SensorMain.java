@@ -1,19 +1,14 @@
 package com.royalroomba.sensor;
 
-import java.io.File;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import android.app.Activity;
-import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -22,6 +17,7 @@ import android.widget.Toast;
 
 public class SensorMain extends Activity implements SensorEventListener {
 
+	// Sensors
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
 	
@@ -32,24 +28,19 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// Proximity
 	int i, count = 0;
 	private int sensorstate = 0;
-	MediaPlayer[] hit = new MediaPlayer[7];
-	MediaPlayer raygun;
-	// led
-	Su su_command;
-	private Context context;
-	TimerTask turnOffLED;
-	Timer waitTimer;
-	boolean hasRoot = false;
-	boolean ledOn = false;
+
+	// LED
+	LedControl led;
+	
+	// Audio
+	AudioControl audio;
 	
 	// Accelerometer
 	private static double threshold = 11.500;
 	private static int interval = 10000;
-	
 	private long now = 0;
 	private long timeDiff = 0;
 	private long lastUpdate = 0;
-	
 	private float x = 0;
 	private float y = 0;
 	private float z = 0;
@@ -57,14 +48,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	private float maxMagnitude = 0;
 	
 	// Hit sounds
-	Random generator;
-	
-	/* Send server
-	DefaultHttpClient hc;
-	ResponseHandler <String> res;
-	HttpPost postMethod;
-	List<NameValuePair> nameValuePairs;
-	*/
+	private Random generator = new Random();;
 	
 	// update states
 	private static final int UPDATE = 1;
@@ -72,9 +56,9 @@ public class SensorMain extends Activity implements SensorEventListener {
 	
 	// Interface elements
 	TextView proxCount, proxState, accelX, accelY, accelZ, accelMag, accelMaxMag;
-	NumberFormat format = new DecimalFormat("0.00"); 
+	private NumberFormat format = new DecimalFormat("0.00"); 
 
-    // Need handler for callbacks to the UI thread
+    // Need handler for callback to the UI thread
     final Handler mHandler = new Handler();
 
     // Create runnable for posting
@@ -89,13 +73,10 @@ public class SensorMain extends Activity implements SensorEventListener {
         }
     };
 
-	
 	/** Called when the activity is first created. */
 	public void onCreate(Bundle savedInstanceState){
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		// prepare the random number generator
-		generator = new Random();
 		
 		// Obtain a reference to the system-wide sensor event manager. 
 		sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -112,36 +93,19 @@ public class SensorMain extends Activity implements SensorEventListener {
 		accelMaxMag = (TextView) findViewById(R.id.maxMagnitude);
 		 
 		// Initialise the audio files
-		initAudio();
+		audio = new AudioControl(this);
+		
+		// Initialise the led
+		led = new LedControl(this);
 		
 		// connect to the server
 		//mqConn = ServerMQ.getInstance();
 		//connectSever();
-
-		// Initialise the led
-		checkDevice();	
 	}
 	
-	// Initialise the audio files
-	public void initAudio() {
-		try {
-			hit[0] = MediaPlayer.create(SensorMain.this, R.raw.ouch1);
-			hit[1] = MediaPlayer.create(SensorMain.this, R.raw.ouch2);
-			hit[2] = MediaPlayer.create(SensorMain.this, R.raw.ouch3);
-			hit[3] = MediaPlayer.create(SensorMain.this, R.raw.ouch4);
-			hit[4] = MediaPlayer.create(SensorMain.this, R.raw.ouch5);
-			hit[5] = MediaPlayer.create(SensorMain.this, R.raw.ouch6);
-			hit[6] = MediaPlayer.create(SensorMain.this, R.raw.ouch7);
-			raygun = MediaPlayer.create(SensorMain.this, R.raw.raygun);
-		}catch(Exception e) {
-			Toast.makeText(SensorMain.this, "Error creating audio file: " + e.toString(), Toast.LENGTH_LONG).show();
-		}
-	}
-
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy){
 		// TODO Auto-generated method stub
-
 	}
 	
 	public void connectSever(){
@@ -159,23 +123,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 	
 	public void updateServer(){
 		mqConn.publish("proxhit", "hit");
-		/* Update the MySQL server via http
-		hc = new DefaultHttpClient();
-		res = new BasicResponseHandler();
-		postMethod = new HttpPost("http://hci-apps.ddns.comp.nus.edu.sg/yitchun/hitcount.php");
-		nameValuePairs = new ArrayList<NameValuePair>(1);
-		nameValuePairs.add(new BasicNameValuePair("hit", "hit"));
-		try{
-			postMethod.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-			hc.execute(postMethod,res);
-		}catch(UnsupportedEncodingException e){
-			e.printStackTrace();
-		}catch(ClientProtocolException e){
-			e.printStackTrace();
-		}catch(IOException e){
-			e.printStackTrace();
-		}
-		*/
 	}
 	
 	public void updateNotify(int state){
@@ -211,57 +158,13 @@ public class SensorMain extends Activity implements SensorEventListener {
 
 			sensorstate = 0;
 			
-           	toggleLED();			
-			raygun.start();
+           	led.toggleLED(1000);			
+           	audio.raygun.start();
 			
 			// update the interface
 			count++;
 			proxCount.setText(count + " hits");
 			proxState.setText(distance + "cm");
-		}
-	}
-	
-	// check led
-	public void checkDevice(){
-		if (new File("/sys/devices/platform/flashlight.0/leds/flashlight/brightness").exists() == false) {
-			Toast.makeText(context, "Sorry, manual LED control not supported!", Toast.LENGTH_SHORT).show();
-		}else{
-			// device is okie, now ask for root
-			su_command = new Su();
-			hasRoot = this.su_command.can_su;
-			if(!hasRoot){
-				Toast.makeText(context, "No root! Unable to control LEDs!", Toast.LENGTH_SHORT).show();
-			}
-		}
-	}
-	
-	// Turns of the LED if it's on
-	public class turnOffLED extends TimerTask {
-		public void run() {
-			if(ledOn){
-				if(hasRoot){
-					su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
-				}	
-				ledOn = false;
-			}
-		}
-	}
-
-	// Toggles the LED on or off
-	public void toggleLED(){
-		if(ledOn){
-			Log.i("RR-Sensor", "LED is ON, turn it off");
-			if(hasRoot){
-				su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
-			}
-			ledOn = false;
-		}else{
-			Log.i("RR-Sensor", "LED is OFF, turn it on");
-			if(hasRoot){
-				su_command.Run("echo 1 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
-			}
-			ledOn = true;
-			new Timer().schedule(new turnOffLED(), 1000);			
 		}
 	}
 	
@@ -301,7 +204,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 						// get a sound
 						i = generator.nextInt(7);
 						// play it
-						hit[i].start();
+						audio.hit[i].start();
 						Log.i("RoyalRoomba-sensor", "Gap: " + timeDiff);
 						Toast.makeText(this, "A hit is detected at with magnitude of " + format.format(magnitude) + " with an interval of " + format.format(timeDiff/1000000000.0) + " secs", Toast.LENGTH_SHORT).show();
 					}
@@ -319,9 +222,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		if(hasRoot){
-			su_command.Run("echo 0 > /sys/devices/platform/flashlight.0/leds/flashlight/brightness");
-		}
+		led.TurnOffLED();
 		sensorManager.unregisterListener(SensorMain.this, proximitySensor);
 		sensorManager.unregisterListener(SensorMain.this, accelerometerSensor);
 	}
