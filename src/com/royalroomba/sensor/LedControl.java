@@ -9,6 +9,8 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class LedControl{
+	// TAG
+	private static final String TAG = "rr-sensor:AudioControl";
 	// whether device is rooted
 	boolean hasRoot = false;
 	// whether the led is on
@@ -67,10 +69,10 @@ public class LedControl{
 	// Toggles the LED on or off
 	public void toggleLED(int time){
 		if(ledOn){
-			Log.i("RR-Sensor", "LED is ON, turn it off");
+			Log.i(TAG, "LED is ON, turn it off");
 			this.TurnOffLED();
 		}else{
-			Log.i("RR-Sensor", "LED is OFF, turn it on");
+			Log.i(TAG, "LED is OFF, turn it on");
 			this.TurnOnLED();
 			// turn it off awhile specified time
 			new Timer().schedule(new turnOffLEDTimed(), time);			

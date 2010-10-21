@@ -14,27 +14,34 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
-        public static final int connect=0x7f060007;
-        public static final int count=0x7f060000;
-        public static final int decrease=0x7f060006;
-        public static final int increase=0x7f060005;
-        public static final int magnitude=0x7f060003;
-        public static final int maxMagnitude=0x7f060004;
-        public static final int proxState=0x7f060001;
-        public static final int sensitivity=0x7f060002;
+        public static final int connect=0x7f060000;
+        public static final int count=0x7f060002;
+        public static final int decrease=0x7f060008;
+        public static final int increase=0x7f060007;
+        public static final int magnitude=0x7f060005;
+        public static final int maxMagnitude=0x7f060006;
+        public static final int proxState=0x7f060003;
+        public static final int sensitivity=0x7f060004;
+        public static final int serverState=0x7f060001;
     }
     public static final class layout {
         public static final int main=0x7f030000;
     }
     public static final class raw {
-        public static final int ouch1=0x7f040000;
-        public static final int ouch2=0x7f040001;
-        public static final int ouch3=0x7f040002;
-        public static final int ouch4=0x7f040003;
-        public static final int ouch5=0x7f040004;
-        public static final int ouch6=0x7f040005;
-        public static final int ouch7=0x7f040006;
-        public static final int raygun=0x7f040007;
+        public static final int boring=0x7f040000;
+        public static final int comeonthen=0x7f040001;
+        public static final int coward=0x7f040002;
+        public static final int horn=0x7f040003;
+        public static final int illgetyou=0x7f040004;
+        public static final int ouch1=0x7f040005;
+        public static final int ouch2=0x7f040006;
+        public static final int ouch3=0x7f040007;
+        public static final int ouch4=0x7f040008;
+        public static final int ouch5=0x7f040009;
+        public static final int ouch6=0x7f04000a;
+        public static final int ouch7=0x7f04000b;
+        public static final int raygun=0x7f04000c;
+        public static final int stupid=0x7f04000d;
     }
     public static final class string {
         public static final int app_name=0x7f050000;

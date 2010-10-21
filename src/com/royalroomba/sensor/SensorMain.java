@@ -3,7 +3,6 @@ package com.royalroomba.sensor;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Random;
-import java.util.Timer;
 
 import android.app.Activity;
 import android.content.Context;
@@ -36,6 +35,11 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// Proximity
 	int i, count = 0;
 	private int sensorstate = 0;
+	//private int proxInterval = 100000;
+	private int proxInterval = 100;
+	private long proxNow = 0;
+	private long proxTimeDiff = 0;
+	private long proxLastUpdate = 0;
 
 	// LED
 	LedControl led;
@@ -56,7 +60,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	private float maxMagnitude = 0;
 	
 	// Hit sounds
-	private Random generator = new Random();;
+	private Random generator = new Random();
 	
 	// update states
 	private static final int UPDATE = 1;
@@ -67,9 +71,10 @@ public class SensorMain extends Activity implements SensorEventListener {
 	private static final int CONTACT = 2;
 	
 	private ServerMQ conn;
+	boolean connected = false;
 	
 	// Interface elements
-	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag;
+	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag, serverState;
 	Button increase, decrease, connect;
 	private NumberFormat format = new DecimalFormat("0.00"); 
 
@@ -99,6 +104,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		
 		// Interface elements
+		serverState = (TextView) findViewById(R.id.serverState);
 		proxCount = (TextView) findViewById(R.id.count);
 		proxState = (TextView) findViewById(R.id.proxState);
 		sensitivity = (TextView) findViewById(R.id.sensitivity);
@@ -133,9 +139,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 		
 		// Initialise the led
 		led = new LedControl(this);
-		
-		// connect to the server
-		//connectServer();
 	}
 	
 	@Override
@@ -144,6 +147,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	}
 	
 	public void connectServer(){
+		Toast.makeText(this, "Connecting to server...", Toast.LENGTH_SHORT).show();
 		final Context ctx = this.getApplicationContext();
 		ctx.getApplicationContext();
 		Thread connectThread = new Thread() {
@@ -151,28 +155,41 @@ public class SensorMain extends Activity implements SensorEventListener {
             	// init connection
             	conn = new ServerMQ(host, 5672, ctx);
 
-            	//RCTask java_rc_task = new RCTask(jtests);
-            	//Timer java_rc_timer = new Timer();
-            	//java_rc_timer.schedule(java_rc_task, 1000, 10000);
-
             	// connect to server
-            	if(conn.connect()){
+            	connected = conn.connect();
+            	if(connected){
+            		mHandler.post(mServerConnected);
             		Log.i(TAG, "Connected to server!");
             		conn.listen(ctx);
             	}
-            	
-            	//jtests.test_consume_by_standard_basic_get(mQueuename);
-            	//jtests.test_consume_by_consumer(mQueuename);
-            	//conn.test_consume_by_direct_lib("rubbish"); 
-            	//conn.disconnect();
-                mHandler.post(mServerConnected);
             }
         };
         connectThread.start();
 	}
 	
-	public void updateServer(){
-		conn.publish("proxhit");
+	public void updateServer(int state){
+		if(connected){
+			switch(state){
+			case PROXIMITY:
+				Thread updateProx = new Thread() {
+		            public void run() {
+		            	conn.publish("proxhit");
+		                mHandler.post(mUpdateResults);
+		            }
+		        };
+		        updateProx.start();
+				break;
+			case CONTACT:
+				Thread updateJust = new Thread() {
+		            public void run() {
+		            	conn.publish("justhit");
+		                mHandler.post(mUpdateResults);
+		            }
+		        };
+		        updateJust.start();
+				break;		
+			}
+		}
 	}
 	
 	public void updateNotify(int state){
@@ -183,6 +200,9 @@ public class SensorMain extends Activity implements SensorEventListener {
 			break;
 		case 2:
 			message = "Connection established";
+			serverState.setText("Connected");
+			Toast.makeText(this, "Connected to server!", Toast.LENGTH_SHORT).show();
+			
 			break;
 		default:
 			message = "Error";
@@ -192,29 +212,32 @@ public class SensorMain extends Activity implements SensorEventListener {
 	}
 
 	// keep track of the sensor state to register hits only on entry
-	public void manageSensorState(float distance){
+	public void manageSensorState(float distance, long now){
 		// check state to count only on entry
+		proxNow = now;
+		
 		if(sensorstate == 0){
 			sensorstate = 1;
 		}else{
-			// post update
-	        Thread updateThread = new Thread() {
-	            public void run() {
-	            	updateServer();
-	                mHandler.post(mUpdateResults);
-	            }
-	        };
-	        updateThread.start();
+			proxTimeDiff = proxNow - proxLastUpdate;
+			if(proxTimeDiff > proxInterval * 100000){
+			
+				proxLastUpdate = now;
+				// post update
+				updateServer(PROXIMITY);
 
-			sensorstate = 0;
-			
-           	led.toggleLED(1000);			
-           	audio.raygun.start();
-			
-			// update the interface
-			count++;
-			proxCount.setText(count + " hits");
-			proxState.setText(distance + "cm");
+				sensorstate = 0;
+				
+	           	led.toggleLED(1000);			
+	           	audio.raygun.start();
+				
+				// update the interface
+				count++;
+				proxCount.setText(count + " hits");
+				proxState.setText(distance + "cm");				
+			}else{
+				Log.i(TAG, "Proximity Hit ignored");
+			}
 		}
 	}
 	
@@ -245,30 +268,33 @@ public class SensorMain extends Activity implements SensorEventListener {
 					// check if just hit
 					timeDiff = now - lastUpdate;
 					if(timeDiff > interval * 100000){
-						
+						updateServer(CONTACT);
 						lastUpdate = now;
 						// get a sound
 						i = generator.nextInt(7);
 						// play it
 						audio.hit[i].start();
-						Log.i("RoyalRoomba-sensor", "Gap: " + timeDiff);
+						
 						Toast.makeText(this, "A hit is detected at with magnitude of " + format.format(magnitude) + " with an interval of " + format.format(timeDiff/1000000000.0) + " secs", Toast.LENGTH_SHORT).show();
+					}else{
+						Log.i(TAG, "Direct Hit ignored");
 					}
 				}
 				
 	    		break;
 	 		case Sensor.TYPE_PROXIMITY:
-	 			manageSensorState(event.values[0]);
+	 			manageSensorState(event.values[0], event.timestamp);
 	 			break;
 	 		}
 	 	}
-	 	//Toast.makeText(this, "Sensor Value Changed", Toast.LENGTH_LONG).show();
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		led.TurnOffLED();
+		conn.disconnect();
+		connected = false;
 		sensorManager.unregisterListener(SensorMain.this, proximitySensor);
 		sensorManager.unregisterListener(SensorMain.this, accelerometerSensor);
 	}
