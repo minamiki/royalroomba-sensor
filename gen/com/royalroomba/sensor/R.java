@@ -14,6 +14,7 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
+        public static final int connect=0x7f060007;
         public static final int count=0x7f060000;
         public static final int decrease=0x7f060006;
         public static final int increase=0x7f060005;

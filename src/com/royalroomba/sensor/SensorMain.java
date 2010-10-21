@@ -3,8 +3,10 @@ package com.royalroomba.sensor;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Random;
+import java.util.Timer;
 
 import android.app.Activity;
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -19,6 +21,7 @@ import android.widget.Toast;
 
 public class SensorMain extends Activity implements SensorEventListener {
 
+	private static final String TAG = "rr-sensor:SensorMain";
 	// Sensors
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
@@ -26,6 +29,8 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// RabbitMQ Connection
 	ServerMQ mqConn;
 	//String host = "www.vorce.net";
+	//String host = "192.168.0.197";
+	//String host = "169.254.5.143";
 	String host = "192.168.2.100";
 	
 	// Proximity
@@ -61,9 +66,11 @@ public class SensorMain extends Activity implements SensorEventListener {
 	private static final int PROXIMITY = 1;
 	private static final int CONTACT = 2;
 	
+	private ServerMQ conn;
+	
 	// Interface elements
 	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag;
-	Button increase, decrease;
+	Button increase, decrease, connect;
 	private NumberFormat format = new DecimalFormat("0.00"); 
 
     // Need handler for callback to the UI thread
@@ -98,6 +105,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		accelMag = (TextView) findViewById(R.id.magnitude);
 		accelMaxMag = (TextView) findViewById(R.id.maxMagnitude);
 		sensitivity.setText(String.valueOf(threshold));
+		connect = (Button) findViewById(R.id.connect);
 		
 		increase = (Button) findViewById(R.id.increase);
 		increase.setOnClickListener(new View.OnClickListener() {
@@ -113,6 +121,12 @@ public class SensorMain extends Activity implements SensorEventListener {
             	sensitivity.setText(String.valueOf(threshold));
             }
         });
+		connect = (Button) findViewById(R.id.connect);
+		connect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	connectServer();
+            }
+        });
 		 
 		// Initialise the audio files
 		audio = new AudioControl(this);
@@ -121,7 +135,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		led = new LedControl(this);
 		
 		// connect to the server
-		connectSever();
+		//connectServer();
 	}
 	
 	@Override
@@ -129,21 +143,36 @@ public class SensorMain extends Activity implements SensorEventListener {
 		// TODO Auto-generated method stub
 	}
 	
-	public void connectSever(){
-		mqConn = new ServerMQ(host);
-		/*
+	public void connectServer(){
+		final Context ctx = this.getApplicationContext();
+		ctx.getApplicationContext();
 		Thread connectThread = new Thread() {
             public void run() {
+            	// init connection
+            	conn = new ServerMQ(host, 5672, ctx);
+
+            	//RCTask java_rc_task = new RCTask(jtests);
+            	//Timer java_rc_timer = new Timer();
+            	//java_rc_timer.schedule(java_rc_task, 1000, 10000);
+
+            	// connect to server
+            	if(conn.connect()){
+            		Log.i(TAG, "Connected to server!");
+            		conn.listen(ctx);
+            	}
             	
+            	//jtests.test_consume_by_standard_basic_get(mQueuename);
+            	//jtests.test_consume_by_consumer(mQueuename);
+            	//conn.test_consume_by_direct_lib("rubbish"); 
+            	//conn.disconnect();
                 mHandler.post(mServerConnected);
             }
         };
         connectThread.start();
-        */
 	}
 	
 	public void updateServer(){
-		mqConn.publish("proxhit", "hit");
+		conn.publish("proxhit");
 	}
 	
 	public void updateNotify(int state){
@@ -171,11 +200,11 @@ public class SensorMain extends Activity implements SensorEventListener {
 			// post update
 	        Thread updateThread = new Thread() {
 	            public void run() {
-	            	//updateServer();
+	            	updateServer();
 	                mHandler.post(mUpdateResults);
 	            }
 	        };
-	        //updateThread.start();
+	        updateThread.start();
 
 			sensorstate = 0;
 			
