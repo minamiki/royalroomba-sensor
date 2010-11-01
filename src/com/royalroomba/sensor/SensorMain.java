@@ -21,6 +21,7 @@ import android.widget.Toast;
 public class SensorMain extends Activity implements SensorEventListener {
 
 	private static final String TAG = "rr-sensor:SensorMain";
+	private static final String HOST = "192.168.0.199";
 	// Sensors
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
@@ -30,13 +31,12 @@ public class SensorMain extends Activity implements SensorEventListener {
 	//String host = "www.vorce.net";
 	//String host = "192.168.0.197";
 	//String host = "169.254.5.143";
-	String host = "192.168.2.100";
-	
+	String host = "192.168.0.199";
 	// Proximity
 	int i, count = 0;
 	private int sensorstate = 0;
 	//private int proxInterval = 100000;
-	private int proxInterval = 100;
+	private int proxInterval = 100000;
 	private long proxNow = 0;
 	private long proxTimeDiff = 0;
 	private long proxLastUpdate = 0;
@@ -153,7 +153,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		Thread connectThread = new Thread() {
             public void run() {
             	// init connection
-            	conn = new ServerMQ(host, 5672, ctx);
+            	conn = new ServerMQ(host, 80, ctx);
 
             	// connect to server
             	connected = conn.connect();
@@ -283,6 +283,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 				
 	    		break;
 	 		case Sensor.TYPE_PROXIMITY:
+	 			Log.i(TAG, "Proximity Change");
 	 			manageSensorState(event.values[0], event.timestamp);
 	 			break;
 	 		}
