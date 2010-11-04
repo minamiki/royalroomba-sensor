@@ -15,28 +15,28 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class SensorMain extends Activity implements SensorEventListener {
 
 	private static final String TAG = "rr-sensor:SensorMain";
-	private static final String HOST = "192.168.0.199";
+	
+	private static final String HOST = "192.168.";
+	private static final int PORT = 5672;
+	private static final int DEVICE = 2;
 	// Sensors
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
 	
 	// RabbitMQ Connection
 	ServerMQ mqConn;
-	//String host = "www.vorce.net";
-	//String host = "192.168.0.197";
-	//String host = "169.254.5.143";
-	String host = "192.168.0.199";
+
 	// Proximity
 	int i, count = 0;
 	private int sensorstate = 0;
-	//private int proxInterval = 100000;
-	private int proxInterval = 100000;
+	private long proxInterval = 5;
 	private long proxNow = 0;
 	private long proxTimeDiff = 0;
 	private long proxLastUpdate = 0;
@@ -76,6 +76,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// Interface elements
 	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag, serverState;
 	Button increase, decrease, connect;
+	EditText serverIP;
 	private NumberFormat format = new DecimalFormat("0.00"); 
 
     // Need handler for callback to the UI thread
@@ -112,6 +113,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		accelMaxMag = (TextView) findViewById(R.id.maxMagnitude);
 		sensitivity.setText(String.valueOf(threshold));
 		connect = (Button) findViewById(R.id.connect);
+		serverIP = (EditText) findViewById(R.id.server);
 		
 		increase = (Button) findViewById(R.id.increase);
 		increase.setOnClickListener(new View.OnClickListener() {
@@ -153,7 +155,8 @@ public class SensorMain extends Activity implements SensorEventListener {
 		Thread connectThread = new Thread() {
             public void run() {
             	// init connection
-            	conn = new ServerMQ(host, 80, ctx);
+            	conn = new ServerMQ(HOST + serverIP.getText(), PORT, ctx, DEVICE);
+            	Log.i(TAG, "Connecting to " + HOST + serverIP.getText());
 
             	// connect to server
             	connected = conn.connect();
@@ -220,9 +223,9 @@ public class SensorMain extends Activity implements SensorEventListener {
 			sensorstate = 1;
 		}else{
 			proxTimeDiff = proxNow - proxLastUpdate;
-			if(proxTimeDiff > proxInterval * 100000){
-			
-				proxLastUpdate = now;
+			if(proxTimeDiff > proxInterval * 1000000000.0){
+				Log.i(TAG, "Proximity Hit, time hit diff " + proxTimeDiff/1000000000.0 + "last update" + proxLastUpdate);
+				proxLastUpdate = proxNow;
 				// post update
 				updateServer(PROXIMITY);
 
@@ -236,7 +239,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 				proxCount.setText(count + " hits");
 				proxState.setText(distance + "cm");				
 			}else{
-				Log.i(TAG, "Proximity Hit ignored");
+				Log.i(TAG, "Proximity Hit ignored, time hit" + proxTimeDiff/1000000000.0);
 			}
 		}
 	}
@@ -267,11 +270,11 @@ public class SensorMain extends Activity implements SensorEventListener {
 				if(magnitude > threshold){
 					// check if just hit
 					timeDiff = now - lastUpdate;
-					if(timeDiff > interval * 100000){
+					if(timeDiff > interval * 1000){
 						updateServer(CONTACT);
 						lastUpdate = now;
 						// get a sound
-						i = generator.nextInt(7);
+						i = generator.nextInt(audio.getNumHits());
 						// play it
 						audio.hit[i].start();
 						
@@ -294,7 +297,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	public void onDestroy() {
 		super.onDestroy();
 		led.TurnOffLED();
-		conn.disconnect();
+		//conn.disconnect();
 		connected = false;
 		sensorManager.unregisterListener(SensorMain.this, proximitySensor);
 		sensorManager.unregisterListener(SensorMain.this, accelerometerSensor);

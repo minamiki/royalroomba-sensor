@@ -13,4 +13,5 @@
 	   <service android:enabled="true" android:name=".TorchService" />
     </application>
 <uses-permission android:name="android.permission.INTERNET" />
+<uses-sdk android:targetSdkVersion="7" android:minSdkVersion="7"></uses-sdk>
 </manifest>

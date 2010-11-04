@@ -14,14 +14,15 @@ public class ServerMQ
 	
 	// Server variables
 	private static final String EXCHANGE = "amq.topic";
-	private static final String ROUTING_KEY_OUT = "roomba-sensorout-1";
-	private static final String ROUTING_KEY_IN = "roomba-sensorin-1";
+	private static final String ROUTING_KEY_OUT = "roomba-sensorout-";
+	private static final String ROUTING_KEY_IN = "roomba-sensorin-";
 	
 	private ConnectionFactory factory;
 	private Connection mConnection;
 	private Channel channel;	
 	private String host;
 	private int port;
+	private int deviceID = 1;
 	
 	private QueueingConsumer consumer;
     public boolean listenLoop = false;
@@ -33,10 +34,11 @@ public class ServerMQ
 	private Random generator = new Random();
 	int i;
 	
-    public ServerMQ(String h, int p, Context context){
+    public ServerMQ(String h, int p, Context context, int deviceID){
     	factory = new ConnectionFactory();
     	this.host = h;
     	this.port = p;
+    	this.deviceID = deviceID;
     	audio = new AudioControl(context);
     }
     
@@ -55,7 +57,7 @@ public class ServerMQ
     		
 			channel.exchangeDeclare(EXCHANGE, "topic", true);
 			String queueName = channel.queueDeclare().getQueue();
-			channel.queueBind(queueName, EXCHANGE, ROUTING_KEY_IN);
+			channel.queueBind(queueName, EXCHANGE, ROUTING_KEY_IN + deviceID);
 			
 			//Print out queue name to notify connection
 			Log.i(TAG, "Queue Binding Complete");
@@ -103,7 +105,7 @@ public class ServerMQ
 				if(message.contentEquals("horn")){
 					audio.horn.start();					
 				}else if(message.contentEquals("taunt")){
-					i = generator.nextInt(5);
+					i = generator.nextInt(audio.getNumTaunts());
 					audio.taunt[i].start();					
 				}
 		    }catch(InterruptedException ie){
@@ -117,7 +119,7 @@ public class ServerMQ
     public void publish(String message){
     	byte[] messageBodyBytes = message.getBytes();
     	try{
-			channel.basicPublish(EXCHANGE, ROUTING_KEY_OUT, null, messageBodyBytes);
+			channel.basicPublish(EXCHANGE, ROUTING_KEY_OUT + deviceID, null, messageBodyBytes);
 			Log.i(TAG, "Message Sent");
 		}catch(IOException e){
 			e.printStackTrace();

@@ -3,13 +3,13 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:stretchColumns="1">
-
-<Button android:id="@+id/connect" android:layout_width="wrap_content" android:text="Connect to server" android:layout_height="wrap_content"></Button>
-    <TableRow>
+<TableRow>
         <TextView
             android:padding="5dip" android:textSize="30px" android:text="Server"/>
     </TableRow>
-
+    <TableRow>
+        <EditText android:id="@+id/server" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0.101"></EditText>
+		<Button android:id="@+id/connect" android:layout_width="wrap_content" android:text="Connect to server" android:layout_height="wrap_content"></Button>	    </TableRow>
     <TableRow>
         <TextView
             android:padding="3dip" android:text="State" android:width="100px"/>
