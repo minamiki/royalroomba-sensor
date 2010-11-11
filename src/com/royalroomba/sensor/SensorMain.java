@@ -23,7 +23,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	
 	private static final String HOST = "192.168.";
 	private static final int PORT = 5672;
-	private static final int DEVICE = 2;
+	private static final int DEVICE = 1;
 	// Sensors
 	SensorManager sensorManager;
 	Sensor proximitySensor, accelerometerSensor;
@@ -156,25 +156,30 @@ public class SensorMain extends Activity implements SensorEventListener {
 		Toast.makeText(this, "Connecting to server...", Toast.LENGTH_SHORT).show();
 		final Context ctx = this.getApplicationContext();
 		ctx.getApplicationContext();
+		
+    	conn = new ServerMQ(HOST + serverIP.getText(), PORT, ctx, DEVICE);
+    	Log.i(TAG, "Connecting to " + HOST + serverIP.getText());
+
+    	// connect to server
+    	connected = conn.connect();
+    	
 		Thread connectThread = new Thread() {
             public void run() {
             	// init connection
-            	conn = new ServerMQ(HOST + serverIP.getText(), PORT, ctx, DEVICE);
-            	Log.i(TAG, "Connecting to " + HOST + serverIP.getText());
-
-            	// connect to server
-            	connected = conn.connect();
-            	if(connected){
-            		mHandler.post(mServerConnected);
-            		Log.i(TAG, "Connected to server!");
-            		conn.listen(ctx);
-            	}else{
-            		mHandler.post(mServerConnectFail);
-            		Log.i(TAG, "Connection failed!");
-            	}
+            	conn.listen(ctx);
             }
         };
-        connectThread.start();
+        
+    	if(connected){
+    		mHandler.post(mServerConnected);
+    		connectThread.start();
+    		Log.i(TAG, "Connected to server!");
+    		
+    	}else{
+    		mHandler.post(mServerConnectFail);
+    		Log.i(TAG, "Connection failed!");
+    	}
+        
 	}
 	
 	public void updateServer(int state){
@@ -233,7 +238,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 		}else{
 			proxTimeDiff = proxNow - proxLastUpdate;
 			if(proxTimeDiff > proxInterval * 1000000000.0){
-				Log.i(TAG, "Proximity Hit, time hit diff " + proxTimeDiff/1000000000.0 + "last update" + proxLastUpdate);
+				Log.i(TAG, "Proximity Hit");
 				proxLastUpdate = proxNow;
 				// post update
 				updateServer(PROXIMITY);
@@ -248,7 +253,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 				proxCount.setText(count + " hits");
 				proxState.setText(distance + "cm");				
 			}else{
-				Log.i(TAG, "Proximity Hit ignored, time hit" + proxTimeDiff/1000000000.0);
+				Log.i(TAG, "Proximity Hit ignored");
 			}
 		}
 	}

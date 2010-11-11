@@ -91,6 +91,7 @@ public class ServerMQ
     public void listen(Context context){
 	    QueueingConsumer.Delivery delivery;
 	    String message;
+	    Log.i(TAG, "Start listening...");
 	    while (listenLoop) {
 		    try {
 		        delivery = consumer.nextDelivery();
@@ -100,9 +101,9 @@ public class ServerMQ
 		        Log.i(TAG, delivery.getEnvelope().getRoutingKey()+" "+(new String(delivery.getBody())));
 			    // Listen
 				message = new String(delivery.getBody());
-				Log.i(TAG, "Recieved:" + message);
-				//TODO: recieve params
-				if(message.contentEquals("horn")){
+				
+				// Execute functions
+				if(message.contentEquals("HORN")){
 					audio.horn.start();					
 				}else if(message.contentEquals("COLLIDE")){
 					i = generator.nextInt(audio.getNumHits());
