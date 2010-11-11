@@ -1,7 +1,5 @@
 package com.royalroomba.sensor;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Random;
 
 import android.app.Activity;
@@ -65,6 +63,7 @@ public class SensorMain extends Activity implements SensorEventListener {
 	// update states
 	private static final int UPDATE = 1;
 	private static final int CONNECT = 2;
+	private static final int FAILED = 3;
 	
 	// update type
 	private static final int PROXIMITY = 1;
@@ -77,7 +76,6 @@ public class SensorMain extends Activity implements SensorEventListener {
 	TextView proxCount, proxState, sensitivity, accelMag, accelMaxMag, serverState;
 	Button increase, decrease, connect;
 	EditText serverIP;
-	private NumberFormat format = new DecimalFormat("0.00"); 
 
     // Need handler for callback to the UI thread
     final Handler mHandler = new Handler();
@@ -91,6 +89,12 @@ public class SensorMain extends Activity implements SensorEventListener {
     final Runnable mServerConnected = new Runnable() {
         public void run() {
         	updateNotify(CONNECT);
+        }
+    };
+    
+    final Runnable mServerConnectFail = new Runnable() {
+        public void run() {
+        	updateNotify(FAILED);
         }
     };
 
@@ -164,6 +168,9 @@ public class SensorMain extends Activity implements SensorEventListener {
             		mHandler.post(mServerConnected);
             		Log.i(TAG, "Connected to server!");
             		conn.listen(ctx);
+            	}else{
+            		mHandler.post(mServerConnectFail);
+            		Log.i(TAG, "Connection failed!");
             	}
             }
         };
@@ -202,10 +209,12 @@ public class SensorMain extends Activity implements SensorEventListener {
 			message = "Server Updated";
 			break;
 		case 2:
-			message = "Connection established";
+			message = "Connection established!";
 			serverState.setText("Connected");
-			Toast.makeText(this, "Connected to server!", Toast.LENGTH_SHORT).show();
-			
+			break;
+		case 3:
+			message = "Connection failed!";
+			serverState.setText("Connection Failed!");
 			break;
 		default:
 			message = "Error";
@@ -278,7 +287,8 @@ public class SensorMain extends Activity implements SensorEventListener {
 						// play it
 						audio.hit[i].start();
 						
-						Toast.makeText(this, "A hit is detected at with magnitude of " + format.format(magnitude) + " with an interval of " + format.format(timeDiff/1000000000.0) + " secs", Toast.LENGTH_SHORT).show();
+						//Toast.makeText(this, "A hit is detected at with magnitude of " + format.format(magnitude) + " with an interval of " + format.format(timeDiff/1000000000.0) + " secs", Toast.LENGTH_SHORT).show();
+						Log.i(TAG, "Direct Hit!");
 					}else{
 						Log.i(TAG, "Direct Hit ignored");
 					}

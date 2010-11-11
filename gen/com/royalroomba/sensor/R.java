@@ -38,16 +38,9 @@ public final class R {
         public static final int crash4=0x7f040006;
         public static final int horn=0x7f040007;
         public static final int illgetyou=0x7f040008;
-        public static final int ouch1=0x7f040009;
-        public static final int ouch2=0x7f04000a;
-        public static final int ouch3=0x7f04000b;
-        public static final int ouch4=0x7f04000c;
-        public static final int ouch5=0x7f04000d;
-        public static final int ouch6=0x7f04000e;
-        public static final int ouch7=0x7f04000f;
-        public static final int raygun=0x7f040010;
-        public static final int shot=0x7f040011;
-        public static final int stupid=0x7f040012;
+        public static final int raygun=0x7f040009;
+        public static final int shot=0x7f04000a;
+        public static final int stupid=0x7f04000b;
     }
     public static final class string {
         public static final int app_name=0x7f050000;

@@ -104,9 +104,9 @@ public class ServerMQ
 				//TODO: recieve params
 				if(message.contentEquals("horn")){
 					audio.horn.start();					
-				}else if(message.contentEquals("taunt")){
-					i = generator.nextInt(audio.getNumTaunts());
-					audio.taunt[i].start();					
+				}else if(message.contentEquals("COLLIDE")){
+					i = generator.nextInt(audio.getNumHits());
+					audio.hit[i].start();					
 				}
 		    }catch(InterruptedException ie){
 		        ie.printStackTrace();
